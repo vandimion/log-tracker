@@ -23,9 +23,11 @@ def flag_failed_logins(conn, threshold = 5):
         SELECT
             e.full_name,
             e.email,
+            d.name as department,
             COUNT(*) as failure_count
         FROM login_logs l
         JOIN employees e ON l.employee_id = e.id
+        LEFT JOIN departments d ON e.department_id = d.id
         WHERE l.status = 'failure'
         GROUP BY l.employee_id
         HAVING COUNT(*) > ?
@@ -36,14 +38,16 @@ def flag_failed_logins(conn, threshold = 5):
 def flag_off_hours(conn, start_hour = 9, end_hour = 17):
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT 
+        SELECT
             e.full_name,
             e.email,
+            d.name as department,
             COUNT(*) as off_hours_count,
             MIN(l.timestamp) as first_occurrence,
             MAX(l.timestamp) as last_occurrence
         FROM login_logs l
         JOIN employees e ON l.employee_id = e.id
+        LEFT JOIN departments d ON e.department_id = d.id
         WHERE CAST(strftime('%H', l.timestamp) AS INTEGER) < ?
            OR CAST(strftime('%H', l.timestamp) AS INTEGER) >= ?
         GROUP BY l.employee_id
